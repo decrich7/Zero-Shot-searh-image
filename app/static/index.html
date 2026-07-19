@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Поиск картинок</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="container py-4">
+
+  <h3 class="mb-1">Поиск картинок по смыслу</h3>
+  <p class="text-muted">Zero-shot поиск: CLIP + BLIP. Картинок в базе: <span id="total">...</span></p>
+
+  <!-- вкладки -->
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link active" href="#" data-tab="text">По тексту</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" data-tab="image">По картинке</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" data-tab="multi">Микс картинок</a></li>
+    <li class="nav-item"><a class="nav-link" href="#" data-tab="add">Добавить в базу</a></li>
+  </ul>
+
+  <!-- общий выбор модели -->
+  <div class="row g-2 align-items-end mb-3" id="model-box">
+    <div class="col-auto">
+      <label class="form-label">Модель</label>
+      <select id="model" class="form-select">
+        <option value="ensemble" selected>Ансамбль CLIP+BLIP</option>
+        <option value="blip">BLIP</option>
+        <option value="clip">CLIP</option>
+      </select>
+    </div>
+    <div class="col-auto" id="weight-box">
+      <label class="form-label">Вес BLIP: <span id="wval">0.75</span></label>
+      <input type="range" class="form-range" id="weight" min="0" max="1" step="0.05" value="0.75">
+    </div>
+    <div class="col-auto form-check mb-2" id="clean-box">
+      <input class="form-check-input" type="checkbox" id="clean">
+      <label class="form-check-label" for="clean">Очистка базы</label>
+    </div>
+  </div>
+
+  <!-- вкладка: текст -->
+  <div class="tab-pane" id="tab-text">
+    <div class="input-group">
+      <select id="lang" class="form-select" style="max-width:130px">
+        <option value="auto" selected>Авто</option>
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+      </select>
+      <input type="text" id="query" class="form-control" placeholder="например: человек на волне / собака на пляже">
+      <button class="btn btn-primary" onclick="searchText()">Найти</button>
+    </div>
+    <div class="text-muted mt-1" id="translated"></div>
+  </div>
+
+  <!-- вкладка: картинка -->
+  <div class="tab-pane d-none" id="tab-image">
+    <input type="file" id="imgfile" class="form-control" accept="image/*" style="max-width:400px">
+    <button class="btn btn-primary mt-2" onclick="searchImage()">Найти похожие</button>
+  </div>
+
+  <!-- вкладка: микс -->
+  <div class="tab-pane d-none" id="tab-multi">
+    <p class="text-muted">Загрузите 2+ картинки — система ищет ту, где смыслы объединяются (собака + пляж).</p>
+    <input type="file" id="multifiles" class="form-control" accept="image/*" multiple style="max-width:400px">
+    <div class="mt-2" id="mixw-box">
+      <label class="form-label">Смешивание (для двух картинок): <span id="mixval">0.5</span></label>
+      <input type="range" class="form-range" id="mixw" min="0" max="1" step="0.05" value="0.5" style="max-width:400px">
+      <div class="text-muted small">0 = только первая, 1 = только вторая</div>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="searchMulti()">Найти</button>
+  </div>
+
+  <!-- вкладка: добавить -->
+  <div class="tab-pane d-none" id="tab-add">
+    <p class="text-muted">Загрузите картинку и добавьте от 1 до 5 описаний.</p>
+    <input type="file" id="addfile" class="form-control mb-2" accept="image/*" style="max-width:400px">
+    <div id="caps"></div>
+    <button class="btn btn-primary mt-2" onclick="addImage()">Добавить</button>
+    <div class="mt-2" id="addmsg"></div>
+  </div>
+
+  <hr class="my-4">
+  <div id="status" class="text-muted"></div>
+  <div class="row g-3 mt-1" id="results"></div>
+
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>
