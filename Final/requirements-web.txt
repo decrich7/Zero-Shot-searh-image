@@ -1,0 +1,19 @@
+# зависимости веб-сервиса (версии как в рабочем окружении)
+# torch ставится в CPU-варианте, см. Dockerfile (--extra-index-url .../cpu)
+torch==2.13.0
+torchvision==0.28.0
+transformers==5.14.1
+sentencepiece==0.2.2
+sacremoses==0.1.1
+numpy==2.4.6
+faiss-cpu==1.14.3
+pandas==3.0.3
+pillow==12.3.0
+fastapi==0.139.2
+uvicorn==0.51.0
+python-multipart==0.0.32
+# мультиязычность: детект языка + перевод не-ru/en через API (импортируются в engine.py)
+langdetect==1.0.9
+deep-translator==1.11.4
+# нужен токенизаторам transformers (конвертация slow-токенайзеров)
+protobuf==7.35.1

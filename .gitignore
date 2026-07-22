@@ -1,0 +1,30 @@
+# Тяжёлое и не нужное для работы кода — в git не храним.
+
+# модели, данные, эмбеддинги (кладутся рядом вручную, см. README)
+MODELS/
+models/
+DATA/
+embeddings_output/
+embeddings_output_20k/
+
+# исследовательские блокноты и вспомогательные скрипты
+Notebooks/
+scripts/
+*.ipynb
+
+# документы и заметки (кроме README)
+*.md
+!README.md
+*.docx
+*.pptx
+*.~lock.*
+*.~*
+
+# окружения и служебное
+.venv/
+venv/
+.idea/
+.serena/
+__pycache__/
+*.pyc
+wit_test/

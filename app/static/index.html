@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VisionSearch — консоль каталога</title>
+  <link href="/static/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/app.css?v=4" rel="stylesheet">
+</head>
+<body>
+
+<header class="container d-flex align-items-center justify-content-between py-3">
+  <div class="d-flex align-items-center gap-2 fw-bold fs-5">
+    <span style="color:var(--brand);font-size:22px">◧</span> VisionSearch
+    <span class="badge rounded-pill d-none d-sm-inline-block" style="background:#fdeee7;color:var(--brand2)">для бизнеса</span>
+  </div>
+  <a class="mut text-decoration-none text-nowrap ps-2" href="/">Клиентский вид →</a>
+</header>
+
+<main class="container pb-5" style="max-width:1080px">
+
+  <section class="py-4">
+    <h1 class="fw-bold" style="letter-spacing:-.02em">Поиск по каталогу</h1>
+    <p class="mut mb-0" style="max-width:620px">Инструмент семантического поиска изображений: по описанию и по образцу,
+       с точным режимом и картой внимания модели.</p>
+  </section>
+
+  <section class="card border-0 shadow-sm rounded-4 p-3 p-md-4">
+    <div class="segs mb-3">
+      <button class="seg active" data-tab="text" onclick="setTab('text',this)">По тексту</button>
+      <button class="seg" data-tab="image" onclick="setTab('image',this)">По картинке</button>
+      <button class="seg" data-tab="combine" onclick="setTab('combine',this)">Собрать сцену</button>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-4 mb-3">
+      <div>
+        <label class="mut small d-block mb-1">Модель</label>
+        <select id="model" class="form-select" style="min-width:280px" onchange="onModel()">
+          <option value="ensemble3" selected>Ансамбль ×3 (CLIP+BLIP+BLIP-2)</option>
+          <option value="ensemble">Ансамбль CLIP+BLIP</option>
+          <option value="blip2">BLIP-2</option>
+          <option value="blip">BLIP-ITM</option>
+          <option value="clip">CLIP</option>
+        </select>
+      </div>
+
+      <div id="weightField" hidden>
+        <label class="mut small d-block mb-1">Вес BLIP: <b id="wval">0.75</b></label>
+        <input type="range" id="weight" class="form-range" style="min-width:160px"
+               min="0" max="1" step="0.05" value="0.75" oninput="wval.textContent=this.value">
+      </div>
+
+      <div class="d-flex align-items-center gap-2" id="preciseSwitch">
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="precise" role="switch">
+        </div>
+        <div class="small lh-sm">Точный режим<br><span class="mut small">ITM-реранж top-8 · медленнее на CPU</span></div>
+      </div>
+    </div>
+
+    <div id="pane-text">
+      <div class="pill d-flex gap-2">
+        <select id="lang" class="form-select flex-grow-0" style="max-width:88px">
+          <option value="auto" selected>Авто</option>
+          <option value="ru">RU</option>
+          <option value="en">EN</option>
+        </select>
+        <input type="text" id="q" placeholder="red leather sofa / кухня с деревянными шкафами"
+               onkeydown="if(event.key==='Enter')runText()">
+        <button class="btn btn-brand px-4" onclick="runText()">Найти</button>
+      </div>
+      <div class="mut small mt-2" id="meta">Кликните результат — покажем карту внимания модели.</div>
+    </div>
+
+    <div id="pane-image" hidden>
+      <div class="pill d-flex gap-2 align-items-center">
+        <input type="file" id="imgfile" accept="image/*" class="form-control">
+        <button class="btn btn-brand px-4 flex-shrink-0" onclick="runImage()">Найти похожие</button>
+      </div>
+      <div class="mut small mt-2">По картинке доступны CLIP / BLIP / ансамбль CLIP+BLIP.</div>
+    </div>
+
+    <div id="pane-combine" hidden>
+      <div class="pill d-flex gap-2 align-items-center">
+        <input type="file" id="combofiles" accept="image/*" class="form-control" multiple>
+        <button class="btn btn-brand px-4 flex-shrink-0" onclick="runCombine()">Собрать сцену</button>
+      </div>
+      <div class="mut small mt-2">Загрузите 2+ образца (например, диван и торшер) — найдём кадры,
+        где присутствуют <b>все</b> объекты сразу. Ансамбль CLIP+BLIP, «мягкое И» по образцам.</div>
+    </div>
+
+    <div class="mut text-center mt-3" id="status" style="min-height:18px"></div>
+    <div class="grid mt-3" id="results"></div>
+  </section>
+
+  <section class="card border-0 shadow-sm rounded-4 p-3 mt-3">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div>
+        <div class="fw-semibold" id="baseInfo">В индексе: … изображений</div>
+        <div class="mut small">ZIP с изображениями — движок сам опишет каждое (BLIP) и проиндексирует.</div>
+      </div>
+      <label class="btn btn-brand flex-shrink-0">
+        <input type="file" id="zip" accept=".zip" hidden onchange="uploadZip()">
+        Загрузить ZIP
+      </label>
+    </div>
+    <div class="d-flex align-items-center gap-2 mt-3" id="progress" hidden>
+      <span class="spinner-border spinner-border-sm text-warning"></span><span id="ptext"></span>
+    </div>
+  </section>
+
+</main>
+
+<div class="overlay" id="hmModal" hidden>
+  <div class="overlay-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <span class="fw-bold" id="hmTitle">Карта внимания</span>
+      <div class="d-flex gap-2">
+        <button class="chip" id="hmToggle" onclick="toggleHeat()">Скрыть карту</button>
+        <button class="chip" onclick="closeHeat()">✕ Закрыть</button>
+      </div>
+    </div>
+    <div class="hmbox" id="hmWrap">
+      <img id="hmImg" draggable="false">
+      <canvas id="hmCanvas"></canvas>
+    </div>
+    <div class="mut small text-center mt-3" id="hmInfo"></div>
+  </div>
+</div>
+
+<script src="/static/business.js?v=4"></script>
+</body>
+</html>

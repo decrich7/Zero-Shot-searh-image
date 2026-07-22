@@ -1,0 +1,20 @@
+# Один сервис — веб. Redis и Celery не нужны: всё считается синхронно.
+# Контекст сборки = корень проекта, а сам Dockerfile лежит в Final/.
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: Final/Dockerfile
+    ports:
+      # host 0.0.0.0:8000 → сервис виден в локальной сети (жюри по общему Wi-Fi
+      # открывают http://<IP-ноутбука>:8000/).
+      - "8000:8000"
+    volumes:
+      # Модели, данные и эмбеддинги монтируем с хоста (в образ не кладём — тяжёлые).
+      # Пути ../ — потому что этот файл в Final/, а папки лежат в корне проекта.
+      # Имя embeddings_output_20k важно: движок читает именно эту папку.
+      - ../MODELS:/app/MODELS
+      - ../DATA:/app/DATA
+      - ../embeddings_output_20k:/app/embeddings_output_20k
+    # На демо удобно: контейнер сам поднимется, если упадёт.
+    restart: unless-stopped

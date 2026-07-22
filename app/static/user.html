@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Мои фото — поиск по смыслу</title>
+  <link href="/static/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/app.css?v=4" rel="stylesheet">
+</head>
+<body>
+
+<header class="container d-flex align-items-center justify-content-between py-3">
+  <div class="d-flex align-items-center gap-2 fw-bold fs-5">
+    <span style="color:var(--brand);font-size:22px">◎</span>
+    <span>Мои&nbsp;фото</span>
+  </div>
+  <a class="mut text-decoration-none" href="/business">Для бизнеса →</a>
+</header>
+
+<main class="container pb-5" style="max-width:1080px">
+
+  <section class="text-center pt-4 pb-3">
+    <h1 class="fw-bold">Найдите фото словами</h1>
+    <p class="mut mx-auto" style="max-width:560px">Опишите, что ищете — как будто рассказываете другу.
+       «Я на пляже», «мой пёс в снегу», «закат над городом».</p>
+  </section>
+
+  <section class="mx-auto" style="max-width:720px">
+    <div class="pill d-flex gap-2">
+      <input type="text" id="query" placeholder="Что вы ищете?"
+             onkeydown="if(event.key==='Enter')run()">
+      <button class="btn btn-brand px-4" onclick="run()">Найти</button>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+      <button class="chip" id="photoBtn" onclick="photoSearch()">🖼 Поиск по фото</button>
+      <button class="chip" id="refBtn" onclick="toggleRefine()">＋ Уточнить примером</button>
+      <button class="chip" id="negBtn" onclick="toggleExclude()">－ Исключить</button>
+      <button class="chip" id="shareBtn" onclick="share()" hidden>🔗 Поделиться</button>
+
+      <div class="segs ms-auto" id="scopeBox" hidden>
+        <button class="seg active" data-scope="user" onclick="setScope('user',this)">Мои фото</button>
+        <button class="seg" data-scope="all" onclick="setScope('all',this)">Все</button>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-3 mt-3" id="refPanel" hidden>
+      <div class="fw-semibold mb-2">«Как на этом фото, но…»</div>
+
+      <div class="d-flex flex-column flex-md-row gap-3" id="refEmpty">
+        <label class="drop flex-md-shrink-0" id="refDrop" style="flex-basis:200px">
+          <input type="file" id="refFile" accept="image/*" hidden onchange="onRefFile()">
+          <span>Перетащите фото-пример или нажмите</span>
+        </label>
+        <div class="mut small d-flex flex-column justify-content-center gap-1">
+          Загрузите пример и допишите в строке поиска, что поменять («…но зимой»).
+          Можно выделить мышкой фрагмент — искать будем именно по нему.
+        </div>
+      </div>
+
+      <div id="refLoaded" hidden>
+        <div class="cropwrap" id="cropWrap">
+          <img id="refImg" draggable="false">
+          <div class="cropsel" id="cropSel" hidden></div>
+        </div>
+        <div class="d-flex align-items-center gap-3 mt-2">
+          <span class="mut small" id="cropHint">Потяните по фото, чтобы искать по фрагменту</span>
+          <button class="link-brand" id="cropReset" hidden onclick="resetCrop()">весь кадр</button>
+          <button class="link-brand" onclick="clearRef()">убрать пример</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-3 mt-3" id="negPanel" hidden>
+      <div class="fw-semibold mb-2">Что исключить из результатов</div>
+      <input type="text" id="neg" class="form-control"
+             placeholder="например: люди, машины, текст"
+             onkeydown="if(event.key==='Enter')run()">
+    </div>
+
+    <div class="mut small mt-2" id="translated" style="min-height:18px"></div>
+  </section>
+
+  <section class="card border-0 shadow-sm rounded-4 p-3 mt-4 mx-auto" id="archiveBox" style="max-width:720px">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div>
+        <div class="archive-title fw-semibold">Свои фото ещё не загружены</div>
+        <div class="mut small">Загрузите ZIP-архив — мы сами придумаем описание каждому кадру,
+           и вы сможете искать по ним словами.</div>
+      </div>
+      <label class="btn btn-outline-warning fw-semibold flex-shrink-0">
+        <input type="file" id="zipFile" accept=".zip" hidden onchange="uploadArchive()">
+        Загрузить архив (ZIP)
+      </label>
+    </div>
+    <div class="d-flex align-items-center gap-2 mt-3" id="progress" hidden>
+      <span class="spinner-border spinner-border-sm text-warning"></span>
+      <span id="progText">Обрабатываем архив…</span>
+    </div>
+  </section>
+
+  <div class="mut text-center mt-4" id="status" style="min-height:20px"></div>
+  <section class="grid mt-3" id="results"></section>
+
+</main>
+
+<div class="snack" id="toast" hidden></div>
+
+<script src="/static/user.js?v=4"></script>
+</body>
+</html>

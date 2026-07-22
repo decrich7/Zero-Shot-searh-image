@@ -1,0 +1,28 @@
+# Контекст сборки Docker = корень проекта (docker-compose: build.context = ..).
+# В образ реально копируются только app/ и Final/requirements-web.txt,
+# поэтому исключаем всё тяжёлое и лишнее, чтобы не гнать гигабайты в build-контекст.
+
+# окружения и служебное
+.venv
+venv
+.git
+.gitignore
+.idea
+.serena
+**/__pycache__
+*.pyc
+
+# тяжёлые данные/модели/эмбеддинги — они монтируются томами, в образ не нужны
+MODELS
+models
+DATA
+embeddings_output
+embeddings_output_20k
+Notebooks
+scripts
+
+# документы и ноутбуки
+*.md
+*.ipynb
+*.docx
+*.pptx
