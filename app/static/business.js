@@ -13,7 +13,7 @@ function setTab(t, el){
   $("pane-text").hidden = t!=="text";
   $("pane-image").hidden = t!=="image";
   $("pane-combine").hidden = t!=="combine";
-  $("results").innerHTML=""; $("status").textContent="";
+  $("results").innerHTML=""; $("status").textContent=""; hideGen();
   const combine = t==="combine";
   $("model").parentElement.style.display = combine ? "none" : "";
   const m=$("model");
@@ -25,11 +25,60 @@ function setTab(t, el){
 }
 function onModel(){ $("weightField").hidden = tab==="combine" || $("model").value !== "ensemble"; }
 
+function hideGen(){ const p=$("genPanel"); if(p){ p.hidden=true; p.innerHTML=""; } }
+
+let genProvider = "yandex";   // "yandex" (облако) | "local" (Stable Diffusion)
+function setProvider(p, el){
+  genProvider = p;
+  el.parentElement.querySelectorAll(".seg").forEach(x=>x.classList.remove("active"));
+  el.classList.add("active");
+}
+
+function showGen(query, conf){
+  const p=$("genPanel"); if(!p) return;
+  genProvider="yandex";   // дефолт — облако, панель пересоздаётся при каждом поиске
+  p.hidden=false;
+  p.innerHTML=`<div class="gen-offer">
+    <div class="gen-txt">
+      <b>В каталоге нет уверенно релевантного</b>
+      <span class="mut small">уверенность ${conf==null?"—":conf} (порог 0.22)</span>
+      <div class="mut small">Сгенерировать изображение по запросу «${esc(query)}»?</div>
+    </div>
+    <div class="gen-ctl">
+      <div class="segs gen-segs">
+        <button class="seg active" onclick="setProvider('yandex',this)">☁ Облако</button>
+        <button class="seg" onclick="setProvider('local',this)">💻 Локально</button>
+      </div>
+      <button class="btn btn-brand" id="genBtn" onclick="runGenerate()">🖼 Сгенерировать</button>
+    </div>
+  </div>
+  <div id="genOut"></div>`;
+}
+
+async function runGenerate(){
+  const btn=$("genBtn"); const out=$("genOut");
+  if(!q0){ return; }
+  const local = genProvider==="local";
+  if(btn){ btn.disabled=true; btn.textContent = local ? "Генерируем локально… (≈1 мин)" : "Генерируем… (10–30 с)"; }
+  out.innerHTML=`<div class="mut small mt-2">${local?"Stable Diffusion":"YandexART"} рисует по описанию…</div>`;
+  const f=new FormData(); f.append("q",q0); f.append("provider",genProvider);
+  const d=await post("/api/generate", f);
+  if(btn){ btn.disabled=false; btn.textContent="🖼 Сгенерировать заново"; }
+  if(d.error){ out.innerHTML=`<div class="gen-err">Ошибка генерации: ${esc(d.error)}</div>`; return; }
+  out.innerHTML=`<div class="gen-result">
+    <img src="${d.image}" alt="сгенерировано">
+    <div class="mut small">Сгенерировано (${esc(d.provider||genProvider)}) по запросу «${esc(d.prompt)}»</div>
+  </div>`;
+}
+
 function draw(data){
+  hideGen();
   if(data.error){ $("status").textContent="Ошибка: "+data.error; return; }
   if($("meta")) $("meta").textContent = data.translated
     ? ("перевод: "+data.translated+" · кликните результат для карты внимания")
     : "Кликните результат — покажем карту внимания модели.";
+  // Гейт генерации: только для текстового поиска, где движок вернул флаг.
+  if(tab==="text" && data.should_generate) showGen(q0, data.confidence);
   const res=data.results||[];
   if(!res.length){ $("status").textContent="Ничего не найдено."; return; }
   $("status").textContent = data.precise ? "точный режим: пересортировано ITM-головой" : "";

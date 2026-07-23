@@ -9,19 +9,17 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from app.engine import Engine
+from app.generate import generate as generate_image
 
 app = FastAPI(title = "Поиск картинок")
 HERE = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory = HERE / "static"), name = "static")
 
-# Расширения картинок, которые вытаскиваем из ZIP-архива.
 EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 engine = None
 
-# Прогресс фоновой заливки архивов: job_id -> {done, total, added, errors, finished}
 JOBS = {}
-
 
 
 @app.on_event("startup")
@@ -30,18 +28,13 @@ def startup():
     engine = Engine()
 
 
-
-# ---------- страницы ----------
-
 @app.get("/")
 def index():
-    # Пользовательская версия (B2C): личный фотоархив, без технических ручек.
     return FileResponse(HERE / "static" / "user.html")
 
 
 @app.get("/business")
 def business():
-    # Технический интерфейс (будущий B2B): выбор модели, вес, метрики.
     return FileResponse(HERE / "static" / "index.html")
 
 
@@ -51,8 +44,6 @@ def stats():
     user = sum(1 for m in engine.meta if m["source"] == "user")
     return {"total": total, "user": user}
 
-
-# ---------- поиск (B2C) ----------
 
 @app.post("/api/search_smart")
 def search_smart(q: str = Form(""),
@@ -74,11 +65,27 @@ def similar(row: int, scope: str = "all"):
     return engine.search_similar(row, scope)
 
 
-# ---------- поиск (технический /business) ----------
-
 @app.post("/api/search_text")
 def search_text(q: str = Form(...), lang: str = Form("auto"),model: str = Form("ensemble"),weight: float = Form(0.75),clean: bool = Form(True),precise: bool = Form(False)):
     return engine.search_text(q.strip(), lang, model, weight, clean, precise)
+
+
+@app.post("/api/generate")
+def generate(q: str = Form(...), provider: str = Form("yandex"), ratio: str = Form("1:1")):
+    q = q.strip()
+    if not q:
+        return JSONResponse({"error": "пустой запрос"}, status_code = 400)
+    try:
+        w, h = (int(x) for x in ratio.split(":"))
+    except Exception:
+        w, h = 1, 1
+    try:
+        b64, mime = generate_image(q, provider = provider, aspect_ratio = (w, h))
+        return {"image": f"data:{mime};base64,{b64}", "prompt": q, "provider": provider}
+    except NotImplementedError as e:
+        return JSONResponse({"error": str(e)}, status_code = 501)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code = 502)
 
 
 @app.post("/api/heatmap")
@@ -105,8 +112,6 @@ def search_multi(files: list[UploadFile] = File(...),model: str = Form("clip"),w
     return engine.search_multi(images, model, weight, mode)
 
 
-# ---------- добавление в базу ----------
-
 @app.post("/api/add")
 def add(file: UploadFile = File(...),captions: list[str] = Form(...)):
     caps = []
@@ -127,9 +132,6 @@ def add(file: UploadFile = File(...),captions: list[str] = Form(...)):
 
 @app.post("/api/upload_archive")
 def upload_archive(file: UploadFile = File(...)):
-    """Принимает ZIP с фото, распаковывает картинки во временную папку и
-    запускает фоновую заливку: каждому фото BLIP генерирует подпись и
-    добавляет его в базу. Прогресс отслеживается по job_id."""
     data = file.file.read()
     try:
         zf = zipfile.ZipFile(io.BytesIO(data))
@@ -144,7 +146,6 @@ def upload_archive(file: UploadFile = File(...)):
                 continue
             if Path(name).suffix.lower() not in EXTS:
                 continue
-            # берём только имя файла — защита от zip-slip
             target = tmp / ("%d_%s" % (len(paths), Path(name).name))
             with open(target, "wb") as out:
                 out.write(zf.read(name))

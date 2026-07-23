@@ -10,6 +10,23 @@ function pct(score, mode){
   return Math.max(1, Math.min(99, Math.round(p)));
 }
 
+// Качественные лейблы похожести. Уровень берём из уже откалиброванного
+// pct(), поэтому границы автоматически подстраиваются под режим (text/image).
+const SIM_BASE = ["совсем не похоже", "немного похоже", "похоже", "сильно похоже"];
+const SIM_TOP  = { image: "почти одинаково", text: "точное совпадение" };
+function simLevel(score, mode){
+  const p = pct(score, mode);
+  if (p < 20) return 0;
+  if (p < 40) return 1;
+  if (p < 60) return 2;
+  if (p < 80) return 3;
+  return 4;
+}
+function simLabel(score, mode){
+  const lvl = simLevel(score, mode);
+  return lvl < 4 ? SIM_BASE[lvl] : (SIM_TOP[mode] || SIM_TOP.image);
+}
+
 function $(id){ return document.getElementById(id); }
 async function post(url, form){
   const r = await fetch(url, {method:"POST", body:form});
@@ -181,9 +198,10 @@ function draw(data, mode){
   $("results").innerHTML = res.map(r => {
     const cap = (r.captions && r.captions[0]) ? r.captions[0] : "";
     const mine = r.source === "user" ? "<span class='b-mine'>моё</span>" : "";
+    const lvl = simLevel(r.score, mode);
     return "<div class='tile' onclick='similar(" + r.row + ")'>" +
       mine +
-      "<span class='b-score'>" + pct(r.score, mode) + "%</span>" +
+      "<span class='b-score lvl" + lvl + "'>" + simLabel(r.score, mode) + "</span>" +
       "<span class='b-hint'>похожие →</span>" +
       "<img src='/image/" + r.row + "' loading='lazy'>" +
       "<div class='cap'>" + esc(cap) + "</div></div>";
