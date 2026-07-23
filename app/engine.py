@@ -199,6 +199,8 @@ class Engine:
         self.blip_img = self.base_blip
         self.blip2_img = self.base_blip2
 
+
+
     def load_user(self):
         UPLOADS.mkdir(exist_ok = True)
 
@@ -215,6 +217,9 @@ class Engine:
             self.user_blip = u_blip
 
             if USER_BLIP2.exists():
+
+
+
                 u_blip2 = np.load(USER_BLIP2).astype("float32")
             else:
                 u_blip2 = np.zeros((0, 32, 256), dtype = "float32")
@@ -222,6 +227,8 @@ class Engine:
                 u_blip2 = self._backfill_user_blip2(user_meta)
             self.user_blip2 = u_blip2
             self.blip2_img = np.vstack([self.base_blip2, u_blip2])
+
+
 
         else:
             dim = self.base_clip.shape[1]
@@ -235,33 +242,29 @@ class Engine:
     def _backfill_user_blip2(self, user_meta):
         vecs = []
         for m in user_meta:
+
+
             image = Image.open(m["path"]).convert("RGB")
             vecs.append(self.blip2_image_vec(image))
         arr = np.stack(vecs).astype("float32") if vecs else np.zeros((0, 32, 256), dtype = "float32")
+
         np.save(USER_BLIP2, arr)
         return arr
-
-
     def find_bad_captions(self):
         row_by_id = {}
         for i, image_id in enumerate(self.img_ids):
             row_by_id[image_id] = i
-        
-
         sim_clip = []
         for i, image_id in enumerate(self.txt_ids):
             row = row_by_id[image_id]
-            
             s = np.sum(self.txt_clip[i] * self.base_clip[row])
             sim_clip.append(s)
-        
         sim_clip = np.array(sim_clip)
 
 
         sim_blip = []
         for i, img_id in enumerate(self.txt_ids):
             row = row_by_id[img_id]
-            
             s = np.sum(self.txt_blip[i] * self.base_blip[row])
             sim_blip.append(s)
         

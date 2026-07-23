@@ -79,9 +79,12 @@ def generate(q: str = Form(...), provider: str = Form("yandex"), ratio: str = Fo
         w, h = (int(x) for x in ratio.split(":"))
     except Exception:
         w, h = 1, 1
+    prompt = q
+    if provider == "local":
+        prompt = engine.to_english(q, "auto")["en"] or q
     try:
-        b64, mime = generate_image(q, provider = provider, aspect_ratio = (w, h))
-        return {"image": f"data:{mime};base64,{b64}", "prompt": q, "provider": provider}
+        b64, mime = generate_image(prompt, provider = provider, aspect_ratio = (w, h))
+        return {"image": f"data:{mime};base64,{b64}", "prompt": prompt, "query": q, "provider": provider}
     except NotImplementedError as e:
         return JSONResponse({"error": str(e)}, status_code = 501)
     except Exception as e:

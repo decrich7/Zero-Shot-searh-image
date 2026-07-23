@@ -65,9 +65,11 @@ async function runGenerate(){
   const d=await post("/api/generate", f);
   if(btn){ btn.disabled=false; btn.textContent="🖼 Сгенерировать заново"; }
   if(d.error){ out.innerHTML=`<div class="gen-err">Ошибка генерации: ${esc(d.error)}</div>`; return; }
+  const orig=d.query||d.prompt||q0;
+  const tr=(d.prompt&&d.query&&d.prompt!==d.query)?` · промпт (en): «${esc(d.prompt)}»`:"";
   out.innerHTML=`<div class="gen-result">
     <img src="${d.image}" alt="сгенерировано">
-    <div class="mut small">Сгенерировано (${esc(d.provider||genProvider)}) по запросу «${esc(d.prompt)}»</div>
+    <div class="mut small">Сгенерировано (${esc(d.provider||genProvider)}) по запросу «${esc(orig)}»${tr}</div>
   </div>`;
 }
 
